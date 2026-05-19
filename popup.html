@@ -89,6 +89,18 @@
       color: #86868B;
       font-size: 13px;
     }
+    .toggle-container {
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: #333333;
+    }
+
+    .toggle-container label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -96,6 +108,12 @@
     <span>Today's Schedule</span>
     <button id="refresh" class="refresh-btn" title="Sync Schedule">🔄</button>
   </h3>
+  <div class="toggle-container">
+    <label>
+      <input type="checkbox" id="showCountdownToggle" checked />
+      Show Countdown Timer
+    </label>
+  </div>
   <div class="schedule-container" id="schedule-list">
     <div id="empty-state">No schedule parsed yet. Log into SmartPass and hit refresh.</div>
   </div>

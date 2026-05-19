@@ -69,15 +69,20 @@ async function syncSmartPassSchedule() {
       updateVisualBadgeCountdown();
     }
   } catch (error) {
-    console.error("Automated background sync skipped:", error.message);
-    chrome.action.setBadgeText({ text: "ERR" });
-    chrome.action.setBadgeBackgroundColor({ color: "#D32F2F" });
+    console.warn("Automated background sync skipped:", error.message);
+    chrome.action.setBadgeText({ text: "..." });
+    chrome.action.setBadgeBackgroundColor({ color: "#757575" });
   }
 }
 
 // Calculates time blocks dynamically and projects numbers onto the extension icon
 async function updateVisualBadgeCountdown() {
-  const data = await chrome.storage.local.get(['currentDaySchedule', 'lastFetchedDate']);
+  const data = await chrome.storage.local.get([
+    'currentDaySchedule',
+    'lastFetchedDate',
+    'showCountdown'
+  ]);
+
   const todayStr = getLocalDateString();
 
   if (data.lastFetchedDate !== todayStr) {
@@ -86,6 +91,8 @@ async function updateVisualBadgeCountdown() {
   }
 
   const periods = data.currentDaySchedule || [];
+  const showCountdown = data.showCountdown ?? true;
+
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -108,8 +115,19 @@ async function updateVisualBadgeCountdown() {
   }
 
   if (activePeriod) {
+    let badgeText = "";
+
+    if (showCountdown) {
+      // Show remaining minutes
+      badgeText = String(activePeriod.remaining);
+    } else {
+      // Show current bell number
+      const bellMatch = activePeriod.name.match(/\d+/);
+      badgeText = bellMatch ? `B${bellMatch[0]}` : "ON";
+    }
+
     // Show only the numeric value inside the badge canvas
-    chrome.action.setBadgeText({ text: String(activePeriod.remaining) });
+    chrome.action.setBadgeText({ text: badgeText });
     chrome.action.setBadgeBackgroundColor({ color: "#1976D2" }); // Deep Blue while inside an active class window
   } else {
     // Clear or mark passing time
@@ -122,6 +140,11 @@ async function updateVisualBadgeCountdown() {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create("clockTicker", { periodInMinutes: 1 });
   chrome.alarms.create("networkSync", { periodInMinutes: 60 });
+
+  chrome.storage.local.set({
+    showCountdown: true
+  });
+
   syncSmartPassSchedule();
 });
 
@@ -142,5 +165,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "forceRefresh") {
     syncSmartPassSchedule().then(() => sendResponse({ success: true }));
     return true; 
+  }
+
+  if (request.action === "updateBadgePreference") {
+    updateVisualBadgeCountdown();
   }
 });

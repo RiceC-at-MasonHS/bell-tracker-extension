@@ -1,7 +1,12 @@
 function renderPopupSchedule() {
-  chrome.storage.local.get(['currentDaySchedule'], (data) => {
+  chrome.storage.local.get(['currentDaySchedule', 'showCountdown'], (data) => {
     const periods = data.currentDaySchedule || [];
     const container = document.getElementById('schedule-list');
+    const toggle = document.getElementById('showCountdownToggle');
+
+    if (toggle) {
+      toggle.checked = data.showCountdown ?? true;
+    }
     
     if (periods.length === 0) return;
     
@@ -62,4 +67,22 @@ document.getElementById('refresh').addEventListener('click', () => {
   });
 });
 
-document.addEventListener('DOMContentLoaded', renderPopupSchedule);
+document.addEventListener('DOMContentLoaded', () => {
+  renderPopupSchedule();
+
+  const toggle = document.getElementById('showCountdownToggle');
+
+  chrome.storage.local.get(['showCountdown'], (data) => {
+    toggle.checked = data.showCountdown ?? true;
+  });
+
+  toggle.addEventListener('change', () => {
+    chrome.storage.local.set({
+      showCountdown: toggle.checked
+    });
+
+    chrome.runtime.sendMessage({
+      action: "updateBadgePreference"
+    });
+  });
+});
