@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      width: 260px;
+      margin: 0;
+      padding: 12px;
+      background-color: #F5F5F7;
+    }
+    h3 {
+      margin: 0 0 10px 0;
+      color: #1D1D1F;
+      font-size: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .refresh-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: #0066CC;
+    }
+    .schedule-container {
+      background: #FFFFFF;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .period-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid #E5E5E7;
+      font-size: 13px;
+      color: #333333;
+    }
+    .period-row:last-child {
+      border-bottom: none;
+    }
+    .period-row.active {
+      background-color: #E8F0FE;
+      font-weight: bold;
+      color: #1A73E8;
+    }
+    .time-slot {
+      color: #6E6E73;
+    }
+    .period-row.active .time-slot {
+      color: #1A73E8;
+    }
+    #empty-state {
+      padding: 15px;
+      text-align: center;
+      color: #86868B;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <h3>
+    <span>Today's Schedule</span>
+    <button id="refresh" class="refresh-btn" title="Sync Schedule">🔄</button>
+  </h3>
+  <div class="schedule-container" id="schedule-list">
+    <div id="empty-state">No schedule parsed yet. Log into SmartPass and hit refresh.</div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
