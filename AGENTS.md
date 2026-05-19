@@ -107,6 +107,18 @@ To keep local queries standardized, ensure reading or modifying operations stric
 
 When taking on issues, work down these specific evolutionary objectives:
 
-1. **Dynamic School ID Resolution:** Abstract out the hardcoded `SCHOOL_ID = 2844` constant by reading the school ID directly out of the `users/Init` payload parameters dynamically on boot.
-2. **Passing Period Visual Tracker:** Instead of showing a generic flat line (`-`) when an active class cannot be matched, update the processing math engine to track if the current timestamp fits between the `end_time` of period $N$ and the `start_time` of period $N+1$, altering badge aesthetics to indicate a passing countdown.
-3. **PowerSchool Data Integration Pipeline:** Bridge complementary rosters or classroom specific context parameters directly into rows by introducing selective API content scraping on PowerSchool dashboard URLs.
+1. **[Show bell number in extension icon](https://github.com/RiceC-at-MasonHS/bell-tracker-extension/issues/1):** The extension image (pinned in the URL bar area) should show the current bell. The images (really just text) that need to be there are:
+    - `1` < first bell
+    - `2` < second bell
+    - `3` < third bell
+    - `4` < fourth bell
+    - `5` < fifth bell
+    - `6` < sixth bell
+    - `7` < seventh bell
+    - `C` < connect bell
+    - `S` < special bell (catchall for exception cases)
+2. **[Countdown Timer should be an option](https://github.com/RiceC-at-MasonHS/bell-tracker-extension/issues/2):** Some users will want the number to be on display all the time. 
+Others will want to have the extension Icon to clearly show the current bell.  We should make it so the users have a checkbox option on the 'popup' to choose if they want the countdown badge text to show or not. 
+3. **Dynamic School ID Resolution:** Abstract out the hardcoded `SCHOOL_ID = 2844` constant by reading the school ID directly out of the `users/Init` payload parameters dynamically on boot.
+4. **Passing Period Visual Tracker:** Instead of showing a generic flat line (`-`) when an active class cannot be matched, update the processing math engine to track if the current timestamp fits between the `end_time` of period $N$ and the `start_time` of period $N+1$, altering badge aesthetics to indicate a passing countdown.
+5. **PowerSchool Data Integration Pipeline:** Bridge complementary rosters or classroom specific context parameters directly into rows by introducing selective API content scraping on PowerSchool dashboard URLs.
