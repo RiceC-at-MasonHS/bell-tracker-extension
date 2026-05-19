@@ -24,7 +24,7 @@ function renderPopupSchedule() {
       
       // Calculate row height (1.2 pixels per minute of class time to prevent scrollbars)
       // Minimum height of 36px so short passing/advisory blocks stay readable
-      row.style.minHeight = `${Math.max(duration * 1.2, 36)}px`; 
+      row.style.minHeight = `${Math.max(duration * 0.8, 36)}px`; 
 
       let timeLineHtml = '';
 
