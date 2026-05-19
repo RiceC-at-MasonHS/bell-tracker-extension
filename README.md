@@ -4,6 +4,8 @@ A lightweight, privacy-first Chrome Extension designed for teachers and administ
 
 By pulling real-time schedules directly from your existing SmartPass session, this extension entirely eliminates the guesswork of 4-day rotating block schedules, unexpected pep rallies, mid-day adjustments, or emergency delay schedules.
 
+![Screenshot of an alpha version of the extension working.](demo-img.png)
+
 ---
 
 ## ✨ Features
