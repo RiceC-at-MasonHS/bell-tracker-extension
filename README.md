@@ -1,4 +1,4 @@
-# 🕒 SmartPass Bell Badge Tracker
+# 🕒 Bell Tracker (Chrome Extension)
 
 A lightweight, privacy-first Chrome Extension designed for teachers and administrative assistants that displays the active class bell period and a live countdown timer directly inside the extension icon badge area. 
 
@@ -58,3 +58,7 @@ This tool does **not** process, track, or save passwords, PII, or browsing telem
 ## 📄 License
 
 This project is open-source and intended purely for educational and local school administrative workspace optimization.
+
+## Privacy Policy
+
+We believe that student and educator data should remain strictly confidential. This Extension was built with a "Privacy-by-Design" architecture, meaning **it does not collect, track, or transmit any personal data to the developer or any third-party servers.** Read more in the [Privacy Policy](privacy-policy.md).
