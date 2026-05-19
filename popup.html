@@ -5,7 +5,7 @@
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      width: 260px;
+      width: 300px; /* Slightly wider to fit single-line text and the time dot */
       margin: 0;
       padding: 12px;
       background-color: #F5F5F7;
@@ -30,29 +30,59 @@
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       overflow: hidden;
+      position: relative; 
     }
     .period-row {
+      position: relative; 
       display: flex;
+      flex-direction: row; /* Back to a single horizontal line */
       justify-content: space-between;
-      padding: 10px 12px;
+      align-items: center; /* Vertically centers the text inside tall rows */
+      padding: 0 16px; /* Removed vertical padding, relying on calculated height */
       border-bottom: 1px solid #E5E5E7;
       font-size: 13px;
       color: #333333;
+      box-sizing: border-box; 
     }
     .period-row:last-child {
       border-bottom: none;
     }
     .period-row.active {
       background-color: #E8F0FE;
-      font-weight: bold;
       color: #1A73E8;
+    }
+    .period-name {
+      font-weight: 600;
     }
     .time-slot {
       color: #6E6E73;
+      font-size: 12px;
     }
     .period-row.active .time-slot {
       color: #1A73E8;
     }
+    
+    /* The Current Time Indicator */
+    .time-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: #EA4335; 
+      z-index: 10;
+      pointer-events: none;
+    }
+    .time-line::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: -4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #EA4335;
+    }
+    
     #empty-state {
       padding: 15px;
       text-align: center;
