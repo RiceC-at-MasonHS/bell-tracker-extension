@@ -1,7 +1,6 @@
 // background.js - Core logic for SmartPass Schedule Sync and Badge Countdown
-const SCHOOL_ID = 2844; // Static school ID for the target institution, can be made dynamic if needed
+const SCHOOL_ID = 2844;
 
-// Helper to generate dynamic local date strings safely
 function getLocalDateString(offsetDays = 0) {
   const d = new Date();
   if (offsetDays) d.setDate(d.getDate() + offsetDays);
@@ -11,41 +10,38 @@ function getLocalDateString(offsetDays = 0) {
   return `${year}-${month}-${day}`;
 }
 
-// Main background pipeline to pull identity and target day agendas
+// NEW: maps period name → badge character per Issue #1
+function getBellIdentifier(name) {
+  if (!name) return 'S';
+  const numbered = name.match(/bell\s*(\d)/i) || name.match(/period\s*(\d)/i);
+  if (numbered) {
+    const n = parseInt(numbered[1], 10);
+    if (n >= 1 && n <= 7) return String(n);
+  }
+  if (/connect/i.test(name)) return 'C';
+  return 'S';
+}
+
 async function syncSmartPassSchedule() {
   const todayStr = getLocalDateString();
   const tomorrowStr = getLocalDateString(1);
 
   try {
-    // Step 1: Bootstrap Identity via active cookies
     const initResponse = await fetch('https://smartpass.app/api/prod-us-central/v2/users/Init', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        start_date: todayStr,
-        end_date: tomorrowStr,
-        preferred_school_id: SCHOOL_ID
-      })
+      body: JSON.stringify({ start_date: todayStr, end_date: tomorrowStr, preferred_school_id: SCHOOL_ID })
     });
 
     if (!initResponse.ok) throw new Error("User session not found or cookie expired.");
     const initData = await initResponse.json();
     const userId = initData?.user?.id;
-    
     if (!userId) throw new Error("Could not parse explicit user ID context.");
 
-    // Step 2: Extract real-time agenda for current calendar slot
     const agendaResponse = await fetch('https://smartpass.app/api/prod-us-central/v2/schedules/GetAgendaForDates', {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-school-id': String(SCHOOL_ID)
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        start_date: todayStr,
-        end_date: tomorrowStr
-      })
+      headers: { 'content-type': 'application/json', 'x-school-id': String(SCHOOL_ID) },
+      body: JSON.stringify({ user_id: userId, start_date: todayStr, end_date: tomorrowStr })
     });
 
     if (!agendaResponse.ok) throw new Error("Failed to map schedule coordinates.");
@@ -55,17 +51,12 @@ async function syncSmartPassSchedule() {
     if (todayData?.period_agendas) {
       const cleanPeriods = todayData.period_agendas.map(p => ({
         name: p.long_name,
+        bellId: getBellIdentifier(p.long_name), // NEW
         start: p.start_time,
         end: p.end_time
       }));
 
-      // Commit cleanly to local browser storage sandbox
-      await chrome.storage.local.set({ 
-        currentDaySchedule: cleanPeriods,
-        lastFetchedDate: todayStr 
-      });
-      
-      // Instantly run calculation update once fresh data drops
+      await chrome.storage.local.set({ currentDaySchedule: cleanPeriods, lastFetchedDate: todayStr });
       updateVisualBadgeCountdown();
     }
   } catch (error) {
@@ -75,9 +66,8 @@ async function syncSmartPassSchedule() {
   }
 }
 
-// Calculates time blocks dynamically and projects numbers onto the extension icon
 async function updateVisualBadgeCountdown() {
-  const data = await chrome.storage.local.get(['currentDaySchedule', 'lastFetchedDate']);
+  const data = await chrome.storage.local.get(['currentDaySchedule', 'lastFetchedDate', 'showCountdown']); // NEW: showCountdown
   const todayStr = getLocalDateString();
 
   if (data.lastFetchedDate !== todayStr) {
@@ -86,6 +76,7 @@ async function updateVisualBadgeCountdown() {
   }
 
   const periods = data.currentDaySchedule || [];
+  const showCountdown = data.showCountdown !== false; // NEW: default ON
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -94,31 +85,25 @@ async function updateVisualBadgeCountdown() {
   for (let period of periods) {
     const [startH, startM] = period.start.split(':').map(Number);
     const [endH, endM] = period.end.split(':').map(Number);
-    
     const startTotal = startH * 60 + startM;
     const endTotal = endH * 60 + endM;
 
     if (currentMinutes >= startTotal && currentMinutes < endTotal) {
-      activePeriod = {
-        name: period.name,
-        remaining: endTotal - currentMinutes
-      };
+      activePeriod = { bellId: period.bellId, remaining: endTotal - currentMinutes }; // NEW: bellId
       break;
     }
   }
 
   if (activePeriod) {
-    // Show only the numeric value inside the badge canvas
-    chrome.action.setBadgeText({ text: String(activePeriod.remaining) });
-    chrome.action.setBadgeBackgroundColor({ color: "#1976D2" }); // Deep Blue while inside an active class window
+    // NEW: branch on preference
+    chrome.action.setBadgeText({ text: showCountdown ? String(activePeriod.remaining) : activePeriod.bellId });
+    chrome.action.setBadgeBackgroundColor({ color: showCountdown ? "#1976D2" : "#388E3C" });
   } else {
-    // Clear or mark passing time
     chrome.action.setBadgeText({ text: "-" });
-    chrome.action.setBadgeBackgroundColor({ color: "#757575" }); // Neutral Grey for out-of-bounds or passing periods
+    chrome.action.setBadgeBackgroundColor({ color: "#757575" });
   }
 }
 
-// Wire up structural listeners and engine tickers
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create("clockTicker", { periodInMinutes: 1 });
   chrome.alarms.create("networkSync", { periodInMinutes: 60 });
@@ -130,17 +115,17 @@ chrome.runtime.onStartup.addListener(() => {
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "clockTicker") {
-    updateVisualBadgeCountdown();
-  } else if (alarm.name === "networkSync") {
-    syncSmartPassSchedule();
-  }
+  if (alarm.name === "clockTicker") updateVisualBadgeCountdown();
+  else if (alarm.name === "networkSync") syncSmartPassSchedule();
 });
 
-// Listener to handle forced manual refreshes triggered by the popup interface
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "forceRefresh") {
     syncSmartPassSchedule().then(() => sendResponse({ success: true }));
-    return true; 
+    return true;
+  }
+  if (request.action === "badgeModeChanged") { // NEW
+    updateVisualBadgeCountdown().then(() => sendResponse({ success: true }));
+    return true;
   }
 });
