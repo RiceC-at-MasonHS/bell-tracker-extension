@@ -129,6 +129,42 @@ async function updateVisualBadgeCountdown() {
   }
 
   if (activePeriod) {
+    // Icon is always the bell number
+    await setActionIcon(activePeriod.bellId, '#388E3C');
+
+    // Badge overlay only when checkbox is on
+    if (showCountdown) {
+      chrome.action.setBadgeText({ text: String(activePeriod.remaining) });
+      chrome.action.setBadgeBackgroundColor({ color: '#1976D2' });
+    } else {
+      chrome.action.setBadgeText({ text: '' });
+    }
+  } else {
+    await setActionIcon('-', '#757575');
+    chrome.action.setBadgeText({ text: '' });
+  }
+}
+
+  const periods = data.currentDaySchedule || [];
+  const showCountdown = data.showCountdown !== false;
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let activePeriod = null;
+
+  for (let period of periods) {
+    const [startH, startM] = period.start.split(':').map(Number);
+    const [endH, endM] = period.end.split(':').map(Number);
+    const startTotal = startH * 60 + startM;
+    const endTotal = endH * 60 + endM;
+
+    if (currentMinutes >= startTotal && currentMinutes < endTotal) {
+      activePeriod = { bellId: period.bellId, remaining: endTotal - currentMinutes };
+      break;
+    }
+  }
+
+  if (activePeriod) {
     const label = showCountdown ? String(activePeriod.remaining) : activePeriod.bellId;
     const color = showCountdown ? '#1976D2' : '#388E3C';
     await setActionIcon(label, color);
