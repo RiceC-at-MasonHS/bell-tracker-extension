@@ -10,7 +10,6 @@ function getLocalDateString(offsetDays = 0) {
   return `${year}-${month}-${day}`;
 }
 
-// NEW: maps period name → badge character per Issue #1
 function getBellIdentifier(name) {
   if (!name) return 'S';
   const numbered = name.match(/bell\s*(\d)/i) || name.match(/period\s*(\d)/i);
@@ -22,6 +21,40 @@ function getBellIdentifier(name) {
   return 'S';
 }
 
+function drawIconImageData(label, bgColor) {
+  const canvas = new OffscreenCanvas(128, 128);
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = bgColor;
+  const r = 24;
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(128 - r, 0);
+  ctx.quadraticCurveTo(128, 0, 128, r);
+  ctx.lineTo(128, 128 - r);
+  ctx.quadraticCurveTo(128, 128, 128 - r, 128);
+  ctx.lineTo(r, 128);
+  ctx.quadraticCurveTo(0, 128, 0, 128 - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = `bold ${label.length > 1 ? 60 : 72}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, 64, 66);
+
+  return ctx.getImageData(0, 0, 128, 128);
+}
+
+async function setActionIcon(label, bgColor) {
+  const imageData = drawIconImageData(label, bgColor);
+  await chrome.action.setIcon({ imageData: { 128: imageData } });
+  chrome.action.setBadgeText({ text: '' });
+}
+
 async function syncSmartPassSchedule() {
   const todayStr = getLocalDateString();
   const tomorrowStr = getLocalDateString(1);
@@ -29,6 +62,7 @@ async function syncSmartPassSchedule() {
   try {
     const initResponse = await fetch('https://smartpass.app/api/prod-us-central/v2/users/Init', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ start_date: todayStr, end_date: tomorrowStr, preferred_school_id: SCHOOL_ID })
     });
@@ -40,6 +74,7 @@ async function syncSmartPassSchedule() {
 
     const agendaResponse = await fetch('https://smartpass.app/api/prod-us-central/v2/schedules/GetAgendaForDates', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'content-type': 'application/json', 'x-school-id': String(SCHOOL_ID) },
       body: JSON.stringify({ user_id: userId, start_date: todayStr, end_date: tomorrowStr })
     });
@@ -51,7 +86,7 @@ async function syncSmartPassSchedule() {
     if (todayData?.period_agendas) {
       const cleanPeriods = todayData.period_agendas.map(p => ({
         name: p.long_name,
-        bellId: getBellIdentifier(p.long_name), // NEW
+        bellId: getBellIdentifier(p.long_name),
         start: p.start_time,
         end: p.end_time
       }));
@@ -61,13 +96,12 @@ async function syncSmartPassSchedule() {
     }
   } catch (error) {
     console.error("Automated background sync skipped:", error.message);
-    chrome.action.setBadgeText({ text: "ERR" });
-    chrome.action.setBadgeBackgroundColor({ color: "#D32F2F" });
+    await setActionIcon('ERR', '#D32F2F');
   }
 }
 
 async function updateVisualBadgeCountdown() {
-  const data = await chrome.storage.local.get(['currentDaySchedule', 'lastFetchedDate', 'showCountdown']); // NEW: showCountdown
+  const data = await chrome.storage.local.get(['currentDaySchedule', 'lastFetchedDate', 'showCountdown']);
   const todayStr = getLocalDateString();
 
   if (data.lastFetchedDate !== todayStr) {
@@ -76,7 +110,7 @@ async function updateVisualBadgeCountdown() {
   }
 
   const periods = data.currentDaySchedule || [];
-  const showCountdown = data.showCountdown !== false; // NEW: default ON
+  const showCountdown = data.showCountdown !== false;
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -89,18 +123,17 @@ async function updateVisualBadgeCountdown() {
     const endTotal = endH * 60 + endM;
 
     if (currentMinutes >= startTotal && currentMinutes < endTotal) {
-      activePeriod = { bellId: period.bellId, remaining: endTotal - currentMinutes }; // NEW: bellId
+      activePeriod = { bellId: period.bellId, remaining: endTotal - currentMinutes };
       break;
     }
   }
 
   if (activePeriod) {
-    // NEW: branch on preference
-    chrome.action.setBadgeText({ text: showCountdown ? String(activePeriod.remaining) : activePeriod.bellId });
-    chrome.action.setBadgeBackgroundColor({ color: showCountdown ? "#1976D2" : "#388E3C" });
+    const label = showCountdown ? String(activePeriod.remaining) : activePeriod.bellId;
+    const color = showCountdown ? '#1976D2' : '#388E3C';
+    await setActionIcon(label, color);
   } else {
-    chrome.action.setBadgeText({ text: "-" });
-    chrome.action.setBadgeBackgroundColor({ color: "#757575" });
+    await setActionIcon('-', '#757575');
   }
 }
 
@@ -124,7 +157,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     syncSmartPassSchedule().then(() => sendResponse({ success: true }));
     return true;
   }
-  if (request.action === "badgeModeChanged") { // NEW
+  if (request.action === "badgeModeChanged") {
     updateVisualBadgeCountdown().then(() => sendResponse({ success: true }));
     return true;
   }
