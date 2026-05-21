@@ -52,7 +52,6 @@ function drawIconImageData(label, bgColor) {
 async function setActionIcon(label, bgColor) {
   const imageData = drawIconImageData(label, bgColor);
   await chrome.action.setIcon({ imageData: { 128: imageData } });
-  chrome.action.setBadgeText({ text: '' });
 }
 
 async function syncSmartPassSchedule() {
@@ -97,6 +96,7 @@ async function syncSmartPassSchedule() {
   } catch (error) {
     console.error("Automated background sync skipped:", error.message);
     await setActionIcon('ERR', '#D32F2F');
+    chrome.action.setBadgeText({ text: '' });
   }
 }
 
@@ -129,10 +129,7 @@ async function updateVisualBadgeCountdown() {
   }
 
   if (activePeriod) {
-    // Icon is always the bell number
     await setActionIcon(activePeriod.bellId, '#388E3C');
-
-    // Badge overlay only when checkbox is on
     if (showCountdown) {
       chrome.action.setBadgeText({ text: String(activePeriod.remaining) });
       chrome.action.setBadgeBackgroundColor({ color: '#1976D2' });
@@ -142,34 +139,6 @@ async function updateVisualBadgeCountdown() {
   } else {
     await setActionIcon('-', '#757575');
     chrome.action.setBadgeText({ text: '' });
-  }
-}
-
-  const periods = data.currentDaySchedule || [];
-  const showCountdown = data.showCountdown !== false;
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-  let activePeriod = null;
-
-  for (let period of periods) {
-    const [startH, startM] = period.start.split(':').map(Number);
-    const [endH, endM] = period.end.split(':').map(Number);
-    const startTotal = startH * 60 + startM;
-    const endTotal = endH * 60 + endM;
-
-    if (currentMinutes >= startTotal && currentMinutes < endTotal) {
-      activePeriod = { bellId: period.bellId, remaining: endTotal - currentMinutes };
-      break;
-    }
-  }
-
-  if (activePeriod) {
-    const label = showCountdown ? String(activePeriod.remaining) : activePeriod.bellId;
-    const color = showCountdown ? '#1976D2' : '#388E3C';
-    await setActionIcon(label, color);
-  } else {
-    await setActionIcon('-', '#757575');
   }
 }
 
