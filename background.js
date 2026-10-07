@@ -80,12 +80,10 @@ async function updateVisualBadgeCountdown() {
   const data = await chrome.storage.local.get([
     'currentDaySchedule',
     'lastFetchedDate',
-    'showTimer'
+    'hideTimer'
   ]);
 
-  // If "show timer" is ON,
-  // remove the badge completely.
-  if (data.showTimer === true) {
+  if (data.hideTimer === true) {
     chrome.action.setBadgeText({ text: "" });
     return;
   }
@@ -154,6 +152,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     return true;
   }
+
 
   if (request.action === "updateTimerVisibility") {
     updateVisualBadgeCountdown();

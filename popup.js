@@ -50,21 +50,21 @@ function renderPopupSchedule() {
   });
 }
 
-const timerCheckbox = document.getElementById('show-timer');
+const timerCheckbox = document.getElementById('hide-timer');
 
 // Load saved setting
-chrome.storage.local.get(['showTimer'], (data) => {
+chrome.storage.local.get(['hideTimer'], (data) => {
   // Default: unchecked
-  timerCheckbox.checked = data.showTimer ?? false;
+  timerCheckbox.checked = data.hideTimer ?? false;
 });
 
 
 // When checkbox changes
 timerCheckbox.addEventListener('change', () => {
-  const showTimer = timerCheckbox.checked;
+  const hideTimer = timerCheckbox.checked;
 
   chrome.storage.local.set({
-    showTimer: showTimer
+    hideTimer: hideTimer
   });
 
   // Tell background.js to immediately update the badge
