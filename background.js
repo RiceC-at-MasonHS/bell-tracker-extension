@@ -77,7 +77,19 @@ async function syncSmartPassSchedule() {
 
 // Calculates time blocks dynamically and projects numbers onto the extension icon
 async function updateVisualBadgeCountdown() {
-  const data = await chrome.storage.local.get(['currentDaySchedule', 'lastFetchedDate']);
+  const data = await chrome.storage.local.get([
+    'currentDaySchedule',
+    'lastFetchedDate',
+    'showTimer'
+  ]);
+
+  // If "show timer" is ON,
+  // remove the badge completely.
+  if (data.showTimer === true) {
+    chrome.action.setBadgeText({ text: "" });
+    return;
+  }
+
   const todayStr = getLocalDateString();
 
   if (data.lastFetchedDate !== todayStr) {
@@ -87,60 +99,68 @@ async function updateVisualBadgeCountdown() {
 
   const periods = data.currentDaySchedule || [];
   const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const currentMinutes =
+    now.getHours() * 60 + now.getMinutes();
 
   let activePeriod = null;
 
   for (let period of periods) {
     const [startH, startM] = period.start.split(':').map(Number);
     const [endH, endM] = period.end.split(':').map(Number);
-    
+
     const startTotal = startH * 60 + startM;
     const endTotal = endH * 60 + endM;
 
-    if (currentMinutes >= startTotal && currentMinutes < endTotal) {
+    if (
+      currentMinutes >= startTotal &&
+      currentMinutes < endTotal
+    ) {
       activePeriod = {
         name: period.name,
         remaining: endTotal - currentMinutes
       };
+
       break;
     }
   }
 
   if (activePeriod) {
-    // Show only the numeric value inside the badge canvas
-    chrome.action.setBadgeText({ text: String(activePeriod.remaining) });
-    chrome.action.setBadgeBackgroundColor({ color: "#1976D2" }); // Deep Blue while inside an active class window
+    chrome.action.setBadgeText({
+      text: String(activePeriod.remaining)
+    });
+
+    chrome.action.setBadgeBackgroundColor({
+      color: "#1976D2"
+    });
+
   } else {
-    // Clear or mark passing time
-    chrome.action.setBadgeText({ text: "-" });
-    chrome.action.setBadgeBackgroundColor({ color: "#757575" }); // Neutral Grey for out-of-bounds or passing periods
+    chrome.action.setBadgeText({
+      text: "-"
+    });
+
+    chrome.action.setBadgeBackgroundColor({
+      color: "#757575"
+    });
   }
 }
 
-// Wire up structural listeners and engine tickers
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.alarms.create("clockTicker", { periodInMinutes: 1 });
-  chrome.alarms.create("networkSync", { periodInMinutes: 60 });
-  syncSmartPassSchedule();
-});
-
-chrome.runtime.onStartup.addListener(() => {
-  syncSmartPassSchedule();
-});
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "clockTicker") {
-    updateVisualBadgeCountdown();
-  } else if (alarm.name === "networkSync") {
-    syncSmartPassSchedule();
-  }
-});
-
-// Listener to handle forced manual refreshes triggered by the popup interface
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+
   if (request.action === "forceRefresh") {
-    syncSmartPassSchedule().then(() => sendResponse({ success: true }));
-    return true; 
+    syncSmartPassSchedule().then(() => {
+      sendResponse({ success: true });
+    });
+
+    return true;
   }
+
+  if (request.action === "updateTimerVisibility") {
+    updateVisualBadgeCountdown();
+
+    sendResponse({ success: true });
+
+    return true;
+  }
+
 });

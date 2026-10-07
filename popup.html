@@ -93,9 +93,24 @@
 </head>
 <body>
   <h3>
-    <span>Today's Schedule</span>
+  <span>Today's Schedule</span>
+
+  <span style="display: flex; align-items: center; gap: 8px;">
+    <label style="
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 400;
+      cursor: pointer;
+    ">
+      <input type="checkbox" id="show-timer">
+      Hide Timer
+    </label>
+
     <button id="refresh" class="refresh-btn" title="Sync Schedule">🔄</button>
-  </h3>
+  </span>
+</h3>
   <div class="schedule-container" id="schedule-list">
     <div id="empty-state">No schedule parsed yet. Log into SmartPass and hit refresh.</div>
   </div>
