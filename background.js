@@ -1,6 +1,3 @@
-// background.js - Core logic for Schedule Sync and Badge Countdown
-const SCHOOL_ID = 2844; // Static school ID for the target institution, can be made dynamic if needed
-
 // Helper to generate dynamic local date strings safely
 function getLocalDateString(offsetDays = 0) {
   const d = new Date();
@@ -14,27 +11,17 @@ function getLocalDateString(offsetDays = 0) {
 // Main background pipeline to pull identity and target day agendas
 async function syncMasonSchedule() {
   const todayStr = getLocalDateString();
-  const tomorrowStr = getLocalDateString(1);
 
   try {
-    
-    // Extract real-time agenda for current calendar slot
-    // Placeholder mock data
-    const agendaResponse = await fetch('https://ricec-at-masonhs.github.io/bell-schedule-mock/schedule.json', {
-      method: 'GET',
-      headers: {
-        'content-type': 'application/json',
-        'x-school-id': String(SCHOOL_ID)
-      }
-    });
+    const agendaResponse = await fetch('https://ricec-at-masonhs.github.io/bell-schedule-mock/schedule.json');
 
     if (!agendaResponse.ok) throw new Error("Failed to map schedule coordinates.");
     const agendaData = await agendaResponse.json();
 
-    const todayData = agendaData.days?.[todayStr];
-    if (todayData?.period_agendas) {
-      const cleanPeriods = todayData.period_agendas.map(p => ({
-        name: p.long_name,
+    const todayData = agendaData.buildings?.[0];
+    if (todayData?.periods) {
+      const cleanPeriods = todayData.periods.map(p => ({
+        name: p.name,
         start: p.start_time,
         end: p.end_time
       }));
@@ -64,7 +51,7 @@ async function updateVisualBadgeCountdown() {
   ]);
 
   if (data.hideTimer === true) {
-    chrome.action.setBadgeText({ text: ""})
+    chrome.action.setBadgeText({ text: "" });
     return;
   }
 
