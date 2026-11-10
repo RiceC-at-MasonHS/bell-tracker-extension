@@ -13,14 +13,18 @@ async function syncMasonSchedule() {
   const todayStr = getLocalDateString();
 
   try {
-    const agendaResponse = await fetch('https://ricec-at-masonhs.github.io/bell-schedule-mock/schedule.json');
+    // Use official Mason API
+    const agendaResponse = await fetch('https://storage.googleapis.com/mcs-bell-api/schedule.json');
 
     if (!agendaResponse.ok) throw new Error("Failed to map schedule coordinates.");
     const agendaData = await agendaResponse.json();
 
     const todayData = agendaData.buildings?.[0];
     if (todayData?.periods) {
-      const cleanPeriods = todayData.periods.map(p => ({
+      const cleanPeriods = todayData.periods
+      // Filter out Period 8 (period_id === "P8")
+      .filter(p => p.period_id !== "P8")
+      .map(p => ({
         name: p.name,
         start: p.start_time,
         end: p.end_time
